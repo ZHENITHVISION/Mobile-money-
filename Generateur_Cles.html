@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔑 Générateur de Clés — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #00C896; --red: #FF4757; --orange: #FF9F43;
+    --bg: #0A0F0D; --bg2: #111814; --bg3: #1A2420;
+    --card: #1E2D28; --border: #2A3D36;
+    --text: #E8F5F0; --text2: #8AADA0; --text3: #5A7A70;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 24px 16px; }
+
+  .logo { font-size: 40px; margin-bottom: 8px; }
+  h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: var(--text3); margin-bottom: 32px; }
+
+  /* LOGIN */
+  #login-screen, #generator-screen { width: 100%; max-width: 420px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 11px; font-weight: 700; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; }
+  .form-group { margin-bottom: 14px; }
+  .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+  .form-input { width: 100%; background: var(--bg3); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'Outfit', sans-serif; font-size: 15px; padding: 12px 14px; outline: none; transition: border-color 0.2s; }
+  .form-input:focus { border-color: var(--green); }
+  .form-input::placeholder { color: var(--text3); }
+  .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .btn-primary { background: var(--green); color: #000; }
+  .btn-primary:active { opacity: 0.85; }
+  .btn-secondary { background: var(--bg3); color: var(--text); border: 1.5px solid var(--border); margin-top: 8px; }
+
+  /* CLÉ RÉSULTAT */
+  .key-result { display: none; background: var(--bg3); border: 2px solid var(--green); border-radius: 12px; padding: 20px; text-align: center; margin-top: 16px; }
+  .key-result.show { display: block; }
+  .key-label { font-size: 11px; color: var(--text3); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .key-value { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; color: var(--green); letter-spacing: 3px; margin-bottom: 12px; }
+  .key-phone { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+  .copy-btn { background: var(--green); color: #000; border: none; border-radius: 8px; padding: 10px 20px; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; width: 100%; }
+  .whatsapp-btn { background: #25D366; color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; width: 100%; margin-top: 8px; }
+
+  /* HISTORIQUE */
+  .history-item { padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .history-item:last-child { border-bottom: none; }
+  .history-phone { font-size: 14px; font-weight: 600; }
+  .history-key { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--green); }
+  .history-date { font-size: 11px; color: var(--text3); }
+  .empty { text-align: center; padding: 20px; color: var(--text3); font-size: 13px; }
+
+  /* STATS */
+  .stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .stat-mini { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center; }
+  .stat-mini-val { font-size: 20px; font-weight: 800; color: var(--green); font-family: 'JetBrains Mono', monospace; }
+  .stat-mini-label { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--green); color: #000; padding: 10px 20px; border-radius: 20px; font-weight: 700; font-size: 13px; opacity: 0; transition: all 0.3s; z-index: 999; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  #generator-screen { display: none; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="logo">🔑</div>
+<h1>Générateur de Clés</h1>
+<p class="subtitle">Espace réservé aux revendeurs autorisés</p>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="card">
+    <div class="card-title">🔒 Connexion revendeur</div>
+    <div class="form-group">
+      <label class="form-label">Mot de passe</label>
+      <input class="form-input" id="login-pwd" type="password" placeholder="Entrez votre mot de passe" onkeydown="if(event.key==='Enter')seConnecter()">
+    </div>
+    <button class="btn btn-primary" onclick="seConnecter()">Se connecter</button>
+  </div>
+</div>
+
+<!-- GENERATOR -->
+<div id="generator-screen">
+  
+  <div class="stats-row">
+    <div class="stat-mini">
+      <div class="stat-mini-val" id="stat-total">0</div>
+      <div class="stat-mini-label">Clés générées</div>
+    </div>
+    <div class="stat-mini">
+      <div class="stat-mini-val" id="stat-today">0</div>
+      <div class="stat-mini-label">Aujourd'hui</div>
+    </div>
+    <div class="stat-mini">
+      <div class="stat-mini-val" id="stat-revenus">0</div>
+      <div class="stat-mini-label">Ventes (k FCFA)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚡ Générer une clé</div>
+    <div class="form-group">
+      <label class="form-label">Numéro de téléphone du client</label>
+      <input class="form-input" id="gen-phone" type="tel" placeholder="Ex: 70123456" oninput="previewKey()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nom du client (pour l'historique)</label>
+      <input class="form-input" id="gen-nom" type="text" placeholder="Ex: Moussa Traoré">
+    </div>
+    <button class="btn btn-primary" onclick="genererEtSauvegarder()">🔑 Générer la clé</button>
+
+    <div class="key-result" id="key-result">
+      <div class="key-label">Clé d'activation</div>
+      <div class="key-value" id="key-display"></div>
+      <div class="key-phone" id="key-phone-display"></div>
+      <button class="copy-btn" onclick="copierCle()">📋 Copier la clé</button>
+      <button class="whatsapp-btn" onclick="envoyerWhatsApp()">📱 Envoyer sur WhatsApp</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 Historique des ventes</div>
+    <div id="historique-list"><div class="empty">Aucune vente encore</div></div>
+    <button class="btn btn-secondary" onclick="exporterHistorique()" style="margin-top:12px">📤 Exporter l'historique</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚙️ Administration</div>
+    <button class="btn btn-secondary" onclick="seDeconnecter()">🚪 Se déconnecter</button>
+  </div>
+</div>
+
+<script>
+// MOT DE PASSE — Change cette valeur pour sécuriser l'accès
+// Tu peux donner un mot de passe différent à chaque revendeur
+const MOT_DE_PASSE = "mmk2024burkina";
+
+let currentKey = '';
+let currentPhone = '';
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '') + ' show';
+  setTimeout(() => t.className = 'toast', 2500);
+}
+
+function seConnecter() {
+  const pwd = document.getElementById('login-pwd').value;
+  if (pwd === MOT_DE_PASSE) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('generator-screen').style.display = 'block';
+    rafraichirHistorique();
+  } else {
+    showToast('❌ Mot de passe incorrect', true);
+    document.getElementById('login-pwd').value = '';
+  }
+}
+
+function seDeconnecter() {
+  document.getElementById('login-screen').style.display = 'block';
+  document.getElementById('generator-screen').style.display = 'none';
+  document.getElementById('login-pwd').value = '';
+}
+
+// Algorithme identique à l'app principale
+function genererCle(telephone) {
+  const num = telephone.replace(/\D/g, '');
+  const seed = parseInt(num) || 0;
+  const SECRET = 0x4D4D4B42;
+  let h = seed ^ SECRET;
+  h = ((h >> 16) ^ h) * 0x45D9F3B;
+  h = ((h >> 16) ^ h) * 0x45D9F3B;
+  h = (h >> 16) ^ h;
+  h = Math.abs(h);
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let part1 = '', part2 = '', tmp = h;
+  for (let i = 0; i < 4; i++) { part1 += chars[tmp % chars.length]; tmp = Math.floor(tmp / chars.length); }
+  for (let i = 0; i < 4; i++) { part2 += chars[(tmp + i * 7) % chars.length]; tmp = Math.floor(tmp / chars.length) + 1; }
+  return `MMK-${part1}-${part2}`;
+}
+
+function previewKey() {
+  const phone = document.getElementById('gen-phone').value.trim();
+  if (phone.length >= 8) {
+    currentKey = genererCle(phone);
+    currentPhone = phone;
+  }
+}
+
+function genererEtSauvegarder() {
+  const phone = document.getElementById('gen-phone').value.trim();
+  const nom = document.getElementById('gen-nom').value.trim();
+  if (!phone || phone.length < 8) return showToast('⚠️ Numéro invalide', true);
+  
+  currentKey = genererCle(phone);
+  currentPhone = phone;
+
+  // Afficher la clé
+  document.getElementById('key-display').textContent = currentKey;
+  document.getElementById('key-phone-display').textContent = `Pour le numéro : ${phone}${nom ? ' · ' + nom : ''}`;
+  document.getElementById('key-result').classList.add('show');
+
+  // Sauvegarder dans l'historique
+  const historique = JSON.parse(localStorage.getItem('mmk_historique') || '[]');
+  const existe = historique.find(h => h.phone === phone);
+  if (!existe) {
+    historique.unshift({ phone, nom, cle: currentKey, date: Date.now() });
+    localStorage.setItem('mmk_historique', JSON.stringify(historique));
+  }
+  
+  rafraichirHistorique();
+  showToast('✅ Clé générée !');
+}
+
+function copierCle() {
+  const msg = `Votre clé d'activation Mobile Money Manager :\n\nNuméro : ${currentPhone}\nClé : ${currentKey}\n\nEntrez ces informations dans l'application pour l'activer.`;
+  navigator.clipboard.writeText(msg).then(() => showToast('✅ Copié !')).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = msg;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✅ Copié !');
+  });
+}
+
+function envoyerWhatsApp() {
+  const msg = encodeURIComponent(`✅ *Mobile Money Manager — Activation*\n\n📱 Numéro : ${currentPhone}\n🔑 Clé : *${currentKey}*\n\nOuvrez l'application et entrez ces informations pour activer votre licence.\n\nMerci pour votre achat ! 🙏`);
+  window.open(`https://wa.me/?text=${msg}`, '_blank');
+}
+
+function rafraichirHistorique() {
+  const historique = JSON.parse(localStorage.getItem('mmk_historique') || '[]');
+  const today = new Date().toDateString();
+  const todayCount = historique.filter(h => new Date(h.date).toDateString() === today).length;
+  
+  document.getElementById('stat-total').textContent = historique.length;
+  document.getElementById('stat-today').textContent = todayCount;
+  document.getElementById('stat-revenus').textContent = Math.floor(historique.length * 2); // 2000 FCFA par vente
+
+  const list = document.getElementById('historique-list');
+  if (historique.length === 0) {
+    list.innerHTML = '<div class="empty">Aucune vente encore</div>';
+    return;
+  }
+
+  list.innerHTML = historique.slice(0, 30).map(h => `
+    <div class="history-item">
+      <div>
+        <div class="history-phone">${h.nom || 'Client'} · ${h.phone}</div>
+        <div class="history-key">${h.cle}</div>
+        <div class="history-date">${new Date(h.date).toLocaleDateString('fr-FR')}</div>
+      </div>
+      <button onclick="recopierCle('${h.phone}','${h.cle}')" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text2);font-size:12px;cursor:pointer">📋</button>
+    </div>
+  `).join('');
+}
+
+function recopierCle(phone, cle) {
+  currentKey = cle;
+  currentPhone = phone;
+  const msg = `Votre clé d'activation Mobile Money Manager :\n\nNuméro : ${phone}\nClé : ${cle}`;
+  navigator.clipboard.writeText(msg).catch(() => {});
+  showToast('✅ Copié !');
+}
+
+function exporterHistorique() {
+  const historique = JSON.parse(localStorage.getItem('mmk_historique') || '[]');
+  const csv = 'Nom,Téléphone,Clé,Date\n' + historique.map(h =>
+    `${h.nom||''},${h.phone},${h.cle},${new Date(h.date).toLocaleDateString('fr-FR')}`
+  ).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ventes_mmk_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  showToast('✅ Exporté !');
+}
+
+// Login auto si déjà connecté dans la session
+document.getElementById('login-pwd').addEventListener('keydown', e => {
+  if (e.key === 'Enter') seConnecter();
+});
+</script>
+</body>
+</html>
